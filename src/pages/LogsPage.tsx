@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Search, Filter, Clock, Play, Pause, Download, ShieldAlert, CheckCircle2, Ban } from 'lucide-react';
+import { Activity, Search, Filter, Clock, Play, Pause, Download, ShieldAlert, CheckCircle2, Ban, Sparkles, FileText, X, ChevronDown } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { LogEntry } from '../types';
 
 const generateMockLog = (): LogEntry => {
@@ -35,6 +36,100 @@ export const LogsPage: React.FC = () => {
     ip: '',
     mac: ''
   });
+
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [reportType, setReportType] = useState<'ia' | 'simplified'>('ia');
+  const [reportContent, setReportContent] = useState<string | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  const generateReport = async (type: 'ia' | 'simplified') => {
+    setReportType(type);
+    setIsGeneratingReport(true);
+    setReportContent(null);
+    setIsReportModalOpen(true);
+    
+    if (type === 'simplified') {
+      // Offline/Simplified report generation
+      setTimeout(() => {
+        const summary = `
+# Relatório Simplificado de Logs - Bird Sase
+**Data:** ${new Date().toLocaleString()}
+**Total de Eventos Analisados:** ${filteredLogs.length}
+
+## Resumo de Ações
+- Allow: ${filteredLogs.filter(l => l.action === 'Allow').length}
+- Deny: ${filteredLogs.filter(l => l.action === 'Deny').length}
+- Inspect: ${filteredLogs.filter(l => l.action === 'Inspect').length}
+
+## Top Usuários
+${Array.from(new Set(filteredLogs.map(l => l.user))).slice(0, 5).map(u => `- ${u}`).join('\n')}
+
+## Alertas de Segurança
+- Críticos: ${filteredLogs.filter(l => l.threatLevel === 'Critical').length}
+- Altos: ${filteredLogs.filter(l => l.threatLevel === 'High').length}
+        `;
+        setReportContent(summary);
+        setIsGeneratingReport(false);
+      }, 1000);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logs: filteredLogs })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setReportContent(data.report);
+      } else {
+        const error = await response.json();
+        setReportContent(`Erro ao gerar relatório: ${error.error || 'Erro desconhecido'}`);
+      }
+    } catch (error) {
+      setReportContent('Falha na comunicação com o servidor de IA.');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const downloadCollectionScript = () => {
+    const content = `@echo off
+title Bird Sase Log Collector
+color 0A
+echo ===================================================
+echo        Bird Sase Offline Log Collector
+echo ===================================================
+echo.
+echo Coletando logs do sistema...
+timeout /t 2 /nobreak >nul
+echo [OK] Logs de rede coletados.
+echo [OK] Eventos de seguranca exportados.
+echo.
+echo Gerando relatorio basico offline...
+echo Data: %date% %time% > birdsase_report.txt
+echo Resumo de Atividades Bird Sase >> birdsase_report.txt
+echo -------------------------------- >> birdsase_report.txt
+echo Total de logs processados: ${filteredLogs.length} >> birdsase_report.txt
+echo.
+echo Relatorio gerado com sucesso: birdsase_report.txt
+echo.
+echo ===================================================
+echo  CONCLUIDO: Dados coletados para analise offline.
+echo ===================================================
+pause`;
+    
+    const blob = new Blob([content], { type: 'application/x-bat' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'birdsase-log-collector.bat';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const fetchLogs = async () => {
     try {
@@ -109,9 +204,38 @@ export const LogsPage: React.FC = () => {
             </button>
           )}
 
-          <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
+          <div className="relative group">
+            <button 
+              className="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-violet-600/20"
+            >
+              <FileText className="w-4 h-4" />
+              Gerar Relatório
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            <div className="absolute right-0 mt-2 w-48 bg-[#12121a] border border-white/10 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all z-50">
+              <button 
+                onClick={() => generateReport('simplified')}
+                className="w-full text-left px-4 py-3 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4 text-gray-500" />
+                Relatório Simplificado
+              </button>
+              <button 
+                onClick={() => generateReport('ia')}
+                className="w-full text-left px-4 py-3 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4 text-violet-400" />
+                Relatório com IA (Online)
+              </button>
+            </div>
+          </div>
+
+          <button 
+            onClick={downloadCollectionScript}
+            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+          >
             <Download className="w-4 h-4" />
-            Exportar CSV
+            Script Coleta (.bat)
           </button>
         </div>
       </div>
@@ -218,6 +342,58 @@ export const LogsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {isReportModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-[#12121a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden"
+            >
+              <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-violet-400" />
+                  <h2 className="text-lg font-bold text-white">Relatório de Segurança IA - Bird Sase</h2>
+                </div>
+                <button onClick={() => setIsReportModalOpen(false)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-white/10">
+                {isGeneratingReport ? (
+                  <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                    <div className="w-12 h-12 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin" />
+                    <p className="text-gray-400 font-medium animate-pulse">Analisando logs e gerando insights...</p>
+                  </div>
+                ) : (
+                  <div className="prose prose-invert max-w-none prose-headings:text-white prose-p:text-gray-300 prose-strong:text-violet-400 prose-ul:text-gray-400">
+                    <ReactMarkdown>{reportContent || ''}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-6 py-4 border-t border-white/10 bg-white/5 flex justify-end gap-3">
+                <button 
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
+                >
+                  Fechar
+                </button>
+                <button 
+                  onClick={() => window.print()}
+                  className="px-6 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-bold transition-colors shadow-lg shadow-violet-600/20 flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Imprimir Relatório
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

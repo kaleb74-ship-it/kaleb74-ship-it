@@ -9,6 +9,10 @@ import { ServicesPage } from './ServicesPage';
 import { GenericProfilePage } from './GenericProfilePage';
 import { SettingsPage } from './SettingsPage';
 import { LogsPage } from './LogsPage';
+import { UsersPage } from './UsersPage';
+import { GroupsPage } from './GroupsPage';
+import { DevicesPage } from './DevicesPage';
+import { ZTNAPage } from './ZTNAPage';
 import { useStore } from '../store';
 import { 
   Bell, 
@@ -21,7 +25,8 @@ import {
   Zap,
   Network,
   ShieldAlert,
-  Lock
+  Lock,
+  Shield
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -37,6 +42,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
       case 'overview': return <Overview />;
       case 'policies': return <Policies />;
       case 'agents': return <Agents />;
+      case 'devices': return <DevicesPage />;
+      case 'users': return <UsersPage />;
+      case 'groups': return <GroupsPage />;
+      case 'ztna': return <ZTNAPage />;
       case 'objects': return <ObjectsPage />;
       case 'services': return <ServicesPage />;
       case 'apps': return <GenericProfilePage title="Controle de Aplicações" description="Gerencie perfis de bloqueio e monitoramento de aplicações (Layer 7)." profiles={store.appControls} setProfiles={store.setAppControls} icon={Zap} />;
@@ -54,7 +63,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </div>
           <h3 className="text-xl font-bold text-white">Módulo em Desenvolvimento</h3>
           <p className="text-gray-500 mt-2 max-w-sm">
-            O módulo <span className="text-violet-400 font-mono">"{activeTab}"</span> está sendo estruturado para a próxima release do FRAULT.
+            O módulo <span className="text-violet-400 font-mono">"{activeTab}"</span> está sendo estruturado para a próxima release do Bird Sase.
           </p>
         </div>
       );
@@ -132,7 +141,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             </span>
           </div>
           <div>
-            FRAULT v2.4.1-STABLE &copy; 2024
+            Bird Sase v2.4.1-STABLE &copy; 2024
           </div>
         </footer>
       </main>

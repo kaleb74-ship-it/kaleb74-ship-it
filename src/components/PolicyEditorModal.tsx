@@ -188,7 +188,7 @@ export const PolicyEditorModal: React.FC<PolicyEditorModalProps> = ({ policy, on
                   <option value="Any">Any</option>
                   <option value="HTTP/HTTPS">HTTP/HTTPS</option>
                   <option value="UDP 4500">UDP 4500</option>
-                  {store.services.map(s => <option key={s} value={s.name}>{s.name} ({s.protocol} {s.port})</option>)}
+                  {store.services.map(s => <option key={s.id} value={s.name}>{s.name} ({s.protocol} {s.port})</option>)}
                 </select>
               </div>
               {renderTags(formData.service, 'service')}

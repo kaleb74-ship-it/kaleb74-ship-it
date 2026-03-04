@@ -2,6 +2,10 @@ import express from "express";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { LogEntry } from "./src/types";
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const model = "gemini-3-flash-preview";
 
 // In-memory database for our prototype
 const agents: any[] = [];
@@ -19,13 +23,14 @@ async function startServer() {
   // 1. Register an Agent
   app.post("/api/agents/register", (req, res) => {
     console.log("POST /api/agents/register", req.body);
-    const { hostname, mac, ip, os } = req.body;
+    const { hostname, mac, ip, os, currentUser } = req.body;
     
     // Check if agent already exists
     const existing = agents.find(a => a.mac === mac);
     if (existing) {
       existing.lastSeen = new Date().toISOString();
       existing.status = 'Online';
+      if (currentUser) existing.currentUser = currentUser;
       console.log("Agent updated:", mac);
       return res.json({ message: "Agent updated", agent: existing });
     }
@@ -39,12 +44,27 @@ async function startServer() {
       version: "v2.4.1",
       status: "Online",
       lastSeen: new Date().toISOString(),
-      registeredAt: new Date().toISOString()
+      registeredAt: new Date().toISOString(),
+      currentUser: currentUser || {
+        username: "local_user",
+        isAD: false,
+        lastLogin: new Date().toISOString()
+      }
     };
     
     agents.push(newAgent);
     console.log("New agent registered:", newAgent.id);
     res.status(201).json({ message: "Agent registered", agent: newAgent });
+  });
+
+  // 1.1 Get Users from Agents
+  app.get("/api/users", (req, res) => {
+    const users = agents.map(a => ({
+      agentId: a.id,
+      hostname: a.hostname,
+      ...a.currentUser
+    })).filter(u => u.username);
+    res.json(users);
   });
 
   // 2. Receive Logs from Agent
@@ -127,6 +147,54 @@ async function startServer() {
         { name: 'Nenhuma', value: 0, color: '#8b5cf6' }
       ]
     });
+  });
+
+  // 6. Generate AI Report
+  app.post("/api/reports/generate", async (req, res) => {
+    try {
+      const { logs: reportLogs } = req.body;
+      
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "Gemini API Key not configured" });
+      }
+
+      const prompt = `
+        Analise os seguintes logs de segurança do Bird Sase (SASE Control Plane) e gere um relatório executivo em Português do Brasil.
+        O relatório deve incluir:
+        1. Resumo de atividades (Total de logs, usuários ativos, aplicações mais usadas).
+        2. Análise de ameaças (Quantas ameaças de nível Alto/Crítico foram detectadas).
+        3. Recomendações de segurança baseadas nos padrões observados.
+        4. Conclusão sobre a postura de segurança atual.
+
+        Logs:
+        ${JSON.stringify(reportLogs.slice(0, 20), null, 2)}
+      `;
+
+      const result = await ai.models.generateContent({
+        model: model,
+        contents: [{ parts: [{ text: prompt }] }]
+      });
+
+      res.json({ report: result.text });
+    } catch (error: any) {
+      console.error("Failed to generate report:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // 7. Download IDS/IPS Signatures (Mock)
+  app.get("/api/ids-ips/signatures", (req, res) => {
+    const signatures = [
+      { id: '1', name: 'Log4j RCE Attempt', cve: 'CVE-2021-44228', severity: 'Critical', action: 'Block' },
+      { id: '2', name: 'Spring4Shell Exploit', cve: 'CVE-2022-22965', severity: 'Critical', action: 'Block' },
+      { id: '3', name: 'Follina MSDT Bug', cve: 'CVE-2022-30190', severity: 'High', action: 'Block' },
+      { id: '4', name: 'ProxyLogon Exchange', cve: 'CVE-2021-26855', severity: 'Critical', action: 'Block' },
+      { id: '5', name: 'Apache Struts RCE', cve: 'CVE-2017-5638', severity: 'High', action: 'Block' },
+      { id: '6', name: 'SQL Injection Pattern', cve: 'N/A', severity: 'Medium', action: 'Monitor' },
+      { id: '7', name: 'Cross-Site Scripting (XSS)', cve: 'N/A', severity: 'Medium', action: 'Monitor' },
+      { id: '8', name: 'Brute Force Attempt', cve: 'N/A', severity: 'Low', action: 'Monitor' },
+    ];
+    res.json(signatures);
   });
 
   // --- VITE MIDDLEWARE ---

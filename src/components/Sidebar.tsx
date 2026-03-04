@@ -43,8 +43,8 @@ const menuItems = [
   { id: 'ids', label: 'IDS/IPS', icon: ShieldAlert },
   { id: 'ssl', label: 'Inspeção SSL/TLS', icon: Lock },
   { id: 'logs', label: 'Logs em tempo real', icon: Activity },
-  { id: 'reports', label: 'Relatórios', icon: FileText },
   { id: 'agents', label: 'Gestão de Agentes', icon: Download },
+  { id: 'ztna', label: 'ZTNA (Zero Trust)', icon: ShieldCheck },
   { id: 'settings', label: 'Configurações Globais', icon: Settings },
   { id: 'tenants', label: 'Multi-tenant', icon: Briefcase },
 ];
@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLog
           <ShieldCheck className="text-white w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">FRAULT</h1>
+          <h1 className="text-xl font-bold text-white tracking-tight">Bird Sase</h1>
           <p className="text-[10px] text-violet-400 font-bold uppercase tracking-widest">SASE Control Plane</p>
         </div>
       </div>

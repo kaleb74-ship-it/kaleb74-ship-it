@@ -5,6 +5,7 @@ import { Settings, Server, Mail, Shield, Plus, Trash2, Edit2, Save } from 'lucid
 interface AdminUser {
   id: string;
   name: string;
+  username: string;
   email: string;
   role: 'Leitura' | 'Edição' | 'Super Admin';
 }
@@ -17,15 +18,15 @@ export const SettingsPage: React.FC = () => {
   const [smtpEmail, setSmtpEmail] = useState('alerts@frault.io');
 
   const [admins, setAdmins] = useState<AdminUser[]>([
-    { id: '1', name: 'Administrator', email: 'admin@frault.io', role: 'Super Admin' },
-    { id: '2', name: 'Security Analyst', email: 'soc@frault.io', role: 'Leitura' },
+    { id: '1', name: 'Administrator', username: 'admin', email: 'admin@frault.io', role: 'Super Admin' },
+    { id: '2', name: 'Security Analyst', username: 'soc_analyst', email: 'soc@frault.io', role: 'Leitura' },
   ]);
 
-  const [newAdmin, setNewAdmin] = useState<Partial<AdminUser>>({ role: 'Leitura' });
+  const [newAdmin, setNewAdmin] = useState<Partial<AdminUser & { password?: string }>>({ role: 'Leitura' });
   const [isAddingAdmin, setIsAddingAdmin] = useState(false);
 
   const handleAddAdmin = () => {
-    if (newAdmin.name && newAdmin.email) {
+    if (newAdmin.name && newAdmin.email && newAdmin.username) {
       setAdmins([...admins, { ...newAdmin, id: Math.random().toString(36).substr(2, 9) } as AdminUser]);
       setNewAdmin({ role: 'Leitura' });
       setIsAddingAdmin(false);
@@ -145,7 +146,7 @@ export const SettingsPage: React.FC = () => {
             >
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nome</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nome Completo</label>
                   <input 
                     type="text" 
                     value={newAdmin.name || ''}
@@ -154,11 +155,31 @@ export const SettingsPage: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Usuário (Login)</label>
+                  <input 
+                    type="text" 
+                    value={newAdmin.username || ''}
+                    onChange={e => setNewAdmin({...newAdmin, username: e.target.value})}
+                    className="w-full px-3 py-1.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email</label>
                   <input 
                     type="email" 
                     value={newAdmin.email || ''}
                     onChange={e => setNewAdmin({...newAdmin, email: e.target.value})}
+                    className="w-full px-3 py-1.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Senha</label>
+                  <input 
+                    type="password" 
+                    value={newAdmin.password || ''}
+                    onChange={e => setNewAdmin({...newAdmin, password: e.target.value})}
                     className="w-full px-3 py-1.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
                   />
                 </div>
@@ -196,7 +217,7 @@ export const SettingsPage: React.FC = () => {
             {admins.map(admin => (
               <div key={admin.id} className="p-4 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between group hover:bg-white/10 transition-colors">
                 <div>
-                  <p className="text-sm font-bold text-white">{admin.name}</p>
+                  <p className="text-sm font-bold text-white">{admin.name} <span className="text-violet-400 font-mono text-[10px] ml-2">@{admin.username}</span></p>
                   <p className="text-xs text-gray-400">{admin.email}</p>
                 </div>
                 <div className="flex items-center gap-4">

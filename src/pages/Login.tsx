@@ -53,7 +53,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             >
               <Shield className="text-white w-8 h-8" />
             </motion.div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">FRAULT</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Bird Sase</h1>
             <p className="text-gray-400 text-sm mt-1">SASE Premium Cybersecurity</p>
           </div>
 
