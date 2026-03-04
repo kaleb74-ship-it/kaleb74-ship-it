@@ -79,6 +79,43 @@ pause`;
     URL.revokeObjectURL(url);
   };
 
+  const simulateAgent = async () => {
+    const testAgent = {
+      hostname: `TEST-NODE-${Math.floor(Math.random() * 1000)}`,
+      mac: `52:54:00:${Math.floor(Math.random() * 255).toString(16).padStart(2, '0')}:${Math.floor(Math.random() * 255).toString(16).padStart(2, '0')}:${Math.floor(Math.random() * 255).toString(16).padStart(2, '0')}`,
+      ip: `10.10.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+      os: "Windows 11"
+    };
+
+    try {
+      const res = await fetch('/api/agents/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testAgent)
+      });
+      if (res.ok) {
+        fetchAgents();
+        // Also send a test log
+        await fetch('/api/logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user: 'test.user',
+            workstation: testAgent.hostname,
+            sourceIp: testAgent.ip,
+            mac: testAgent.mac,
+            destIp: '8.8.8.8',
+            application: 'DNS',
+            action: 'Allow',
+            threatLevel: 'Low'
+          })
+        });
+      }
+    } catch (err) {
+      console.error("Simulation failed:", err);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -86,13 +123,22 @@ pause`;
           <h2 className="text-2xl font-bold text-white">Gestão de Agentes</h2>
           <p className="text-gray-400 text-sm">Gerencie a implantação e o status dos agentes FRAULT em endpoints.</p>
         </div>
-        <button 
-          onClick={handleDownload}
-          className="px-6 py-3 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-violet-600/20"
-        >
-          <Download className="w-5 h-5" />
-          Baixar Agente (Windows 11)
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={simulateAgent}
+            className="px-6 py-3 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
+          >
+            <Zap className="w-5 h-5 text-amber-400" />
+            Simular Novo Agente
+          </button>
+          <button 
+            onClick={handleDownload}
+            className="px-6 py-3 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-violet-600/20"
+          >
+            <Download className="w-5 h-5" />
+            Baixar Agente (Windows 11)
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
