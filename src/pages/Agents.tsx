@@ -106,16 +106,58 @@ pause`;
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white/2 rounded-xl p-4 border border-white/5">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Online</p>
-                <p className="text-2xl font-bold text-emerald-400">0</p>
+                <p className="text-2xl font-bold text-emerald-400">{onlineCount}</p>
               </div>
               <div className="bg-white/2 rounded-xl p-4 border border-white/5">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Offline</p>
-                <p className="text-2xl font-bold text-gray-500">0</p>
+                <p className="text-2xl font-bold text-gray-500">{offlineCount}</p>
               </div>
               <div className="bg-white/2 rounded-xl p-4 border border-white/5">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Desatualizados</p>
-                <p className="text-2xl font-bold text-amber-400">0</p>
+                <p className="text-2xl font-bold text-amber-400">{outdatedCount}</p>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-[#12121a] border border-white/5 rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">Agentes Conectados</h3>
+              <span className="px-2 py-1 bg-violet-600/20 text-violet-400 text-[10px] font-bold rounded uppercase tracking-wider">{agents.length} Total</span>
+            </div>
+            <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+              {agents.length > 0 ? (
+                agents.map((agent) => (
+                  <div key={agent.id} className="px-6 py-4 flex items-center justify-between hover:bg-white/2 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2 rounded-lg ${agent.status === 'Online' ? 'bg-emerald-500/10' : 'bg-gray-500/10'}`}>
+                        <Monitor className={`w-5 h-5 ${agent.status === 'Online' ? 'text-emerald-400' : 'text-gray-500'}`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">{agent.hostname}</p>
+                        <p className="text-[10px] text-gray-500 font-mono uppercase tracking-wider">{agent.mac} • {agent.ip}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Versão</p>
+                        <p className="text-xs text-gray-300">{agent.version}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Status</p>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          agent.status === 'Online' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                        }`}>
+                          {agent.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-gray-500 text-sm italic">
+                  Nenhum agente registrado ainda. Use o comando curl para registrar um agente.
+                </div>
+              )}
             </div>
           </div>
 

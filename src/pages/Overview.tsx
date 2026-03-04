@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Activity, 
@@ -24,25 +24,42 @@ import {
   Cell
 } from 'recharts';
 
-const data = [
-  { time: '00:00', traffic: 0, threats: 0 },
-  { time: '04:00', traffic: 0, threats: 0 },
-  { time: '08:00', traffic: 0, threats: 0 },
-  { time: '12:00', traffic: 0, threats: 0 },
-  { time: '16:00', traffic: 0, threats: 0 },
-  { time: '20:00', traffic: 0, threats: 0 },
-  { time: '23:59', traffic: 0, threats: 0 },
-];
-
-const appData = [
-  { name: 'Office 365', value: 0, color: '#8b5cf6' },
-  { name: 'Slack', value: 0, color: '#06b6d4' },
-  { name: 'Zoom', value: 0, color: '#10b981' },
-  { name: 'GitHub', value: 0, color: '#f59e0b' },
-  { name: 'Others', value: 0, color: '#6366f1' },
-];
-
 export const Overview: React.FC = () => {
+  const [stats, setStats] = useState({
+    onlineAgents: 0,
+    totalThreats: 0,
+    activeUsers: 0,
+    topApps: [] as any[]
+  });
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/stats');
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const data = [
+    { time: '00:00', traffic: 0, threats: 0 },
+    { time: '04:00', traffic: 0, threats: 0 },
+    { time: '08:00', traffic: 0, threats: 0 },
+    { time: '12:00', traffic: 0, threats: 0 },
+    { time: '16:00', traffic: 0, threats: 0 },
+    { time: '20:00', traffic: 0, threats: 0 },
+    { time: '23:59', traffic: 0, threats: 0 },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -52,8 +69,10 @@ export const Overview: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Edge Nodes: Online</span>
+            <div className={`w-2 h-2 rounded-full animate-pulse ${stats.onlineAgents > 0 ? 'bg-emerald-500' : 'bg-gray-500'}`} />
+            <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
+              Edge Nodes: {stats.onlineAgents > 0 ? 'Online' : 'Aguardando Conexão'}
+            </span>
           </div>
         </div>
       </div>
@@ -62,9 +81,9 @@ export const Overview: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Tráfego Total', value: '0 B', icon: Activity, color: 'text-cyan-400', trend: '0%', up: true },
-          { label: 'Ameaças Bloqueadas', value: '0', icon: Shield, color: 'text-red-400', trend: '0%', up: false },
-          { label: 'Usuários Ativos', value: '0', icon: Users, color: 'text-violet-400', trend: '0', up: true },
-          { label: 'Dispositivos Edge', value: '0', icon: Laptop, color: 'text-emerald-400', trend: '0', up: true },
+          { label: 'Ameaças Bloqueadas', value: stats.totalThreats.toString(), icon: Shield, color: 'text-red-400', trend: '0%', up: false },
+          { label: 'Usuários Ativos', value: stats.activeUsers.toString(), icon: Users, color: 'text-violet-400', trend: '0', up: true },
+          { label: 'Dispositivos Edge', value: stats.onlineAgents.toString(), icon: Laptop, color: 'text-emerald-400', trend: '0', up: true },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -134,7 +153,7 @@ export const Overview: React.FC = () => {
             Top Aplicações
           </h3>
           <div className="space-y-4">
-            {appData.map((app) => (
+            {stats.topApps.length > 0 ? stats.topApps.map((app) => (
               <div key={app.name} className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-300 font-medium">{app.name}</span>
@@ -150,7 +169,9 @@ export const Overview: React.FC = () => {
                   />
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="py-8 text-center text-gray-500 text-xs italic">Aguardando dados...</div>
+            )}
           </div>
           <button className="w-full mt-8 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-gray-400 transition-all uppercase tracking-widest">
             Ver Relatório Completo

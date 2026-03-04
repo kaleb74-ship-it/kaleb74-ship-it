@@ -16,6 +16,7 @@ async function startServer() {
 
   // 1. Register an Agent
   app.post("/api/agents/register", (req, res) => {
+    console.log("POST /api/agents/register", req.body);
     const { hostname, mac, ip, os } = req.body;
     
     // Check if agent already exists
@@ -23,6 +24,7 @@ async function startServer() {
     if (existing) {
       existing.lastSeen = new Date().toISOString();
       existing.status = 'Online';
+      console.log("Agent updated:", mac);
       return res.json({ message: "Agent updated", agent: existing });
     }
 
@@ -39,11 +41,13 @@ async function startServer() {
     };
     
     agents.push(newAgent);
+    console.log("New agent registered:", newAgent.id);
     res.status(201).json({ message: "Agent registered", agent: newAgent });
   });
 
   // 2. Receive Logs from Agent
   app.post("/api/logs", (req, res) => {
+    console.log("POST /api/logs", req.body);
     const { user, workstation, sourceIp, mac, destIp, application, action, threatLevel } = req.body;
     
     const newLog: LogEntry = {
@@ -70,6 +74,7 @@ async function startServer() {
       agent.status = 'Online';
     }
 
+    console.log("Log received from:", mac);
     res.status(201).json({ message: "Log received", logId: newLog.id });
   });
 
@@ -89,6 +94,37 @@ async function startServer() {
   // 4. Get Logs (for the Dashboard)
   app.get("/api/logs", (req, res) => {
     res.json(logs);
+  });
+
+  // 5. Get Dashboard Stats
+  app.get("/api/stats", (req, res) => {
+    const onlineAgents = agents.filter(a => a.status === 'Online').length;
+    const totalThreats = logs.filter(l => l.threatLevel === 'High' || l.threatLevel === 'Critical').length;
+    const activeUsers = new Set(logs.map(l => l.user)).size;
+    
+    // Calculate top apps
+    const appCounts: Record<string, number> = {};
+    logs.forEach(l => {
+      appCounts[l.application] = (appCounts[l.application] || 0) + 1;
+    });
+    
+    const topApps = Object.entries(appCounts)
+      .map(([name, count]) => ({ 
+        name, 
+        value: Math.round((count / logs.length) * 100) || 0,
+        color: name === 'HTTPS' ? '#8b5cf6' : name === 'DNS' ? '#06b6d4' : '#10b981'
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    res.json({
+      onlineAgents,
+      totalThreats,
+      activeUsers,
+      topApps: topApps.length > 0 ? topApps : [
+        { name: 'Nenhuma', value: 0, color: '#8b5cf6' }
+      ]
+    });
   });
 
   // --- VITE MIDDLEWARE ---
