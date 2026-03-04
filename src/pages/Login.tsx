@@ -20,7 +20,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     // Simulate authentication
     setTimeout(() => {
-      if (username === 'admin' && password === 'admin') {
+      if (username === 'admin' && password === 'Xpk#2098*&&') {
         onLogin();
       } else {
         setError('Credenciais inválidas. Verifique usuário e senha.');
